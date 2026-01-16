@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema elementFormDefault="qualified"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:simpleType name="typology">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="generic" />
+      <xs:enumeration value="identical" />
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <xs:simpleType name="startTime">
+    <xs:restriction base="xs:double"/>
+  </xs:simpleType>
+  <xs:simpleType name="endTime">
+    <xs:restriction base="xs:double"/>
+  </xs:simpleType>
+  <xs:simpleType name="stepTime">
+    <xs:restriction base="xs:double">
+      <xs:minExclusive value="0.0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="timeElem">
+    <xs:attribute name="start" type="startTime" use="required" />
+    <xs:attribute name="end" type="endTime" use="required" />
+    <xs:attribute name="step" type="stepTime" use="required" />
+  </xs:complexType>
+
+  <xs:complexType name="customElem">
+    <xs:attribute name="filename" type="xs:string" use="required" />
+  </xs:complexType>
+  <xs:complexType name="exponentialElem">
+    <xs:attribute name="lambda" type="xs:double" use="required" />
+    <xs:attribute name="outputFilename" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="lognormalElem">
+    <xs:attribute name="mu" type="xs:double" use="required" />
+    <xs:attribute name="sigma" type="xs:double" use="required" />
+    <xs:attribute name="outputFilename" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="normalElem">
+    <xs:attribute name="mu" type="xs:double" use="required" />
+    <xs:attribute name="sigma" type="xs:double" use="required" />
+    <xs:attribute name="outputFilename" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="weibullElem">
+    <xs:attribute name="lambda" type="xs:double" use="required" />
+    <xs:attribute name="k" type="xs:double" use="required" />
+    <xs:attribute name="outputFilename" type="xs:string" use="optional" />
+  </xs:complexType>
+
+  <xs:complexType name="inputElem">
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="isUnreliability" type="xs:boolean" use="optional" default="false" />
+  </xs:complexType>
+  <xs:complexType name="outputElem">
+    <xs:attribute name="name" type="xs:string" use="required" />
+  </xs:complexType>
+
+  <xs:complexType name="bridgeGenericElem">
+    <xs:sequence>
+      <xs:element minOccurs="5" maxOccurs="5" name="input" type="inputElem"/>
+      <xs:element minOccurs="1" maxOccurs="1" name="output" type="outputElem"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="bridgeIdenticalElem">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="input" type="inputElem"/>
+      <xs:element minOccurs="1" maxOccurs="1" name="output" type="outputElem"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="koonGenericElem">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="255" name="input" type="inputElem"/>
+      <xs:element minOccurs="1" maxOccurs="1" name="output" type="outputElem"/>
+    </xs:sequence>
+    <xs:attribute name="minInputs" type="xs:unsignedByte" use="required" />
+  </xs:complexType>
+  <xs:complexType name="koonIdenticalElem">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="input" type="inputElem"/>
+      <xs:element minOccurs="1" maxOccurs="1" name="output" type="outputElem"/>
+    </xs:sequence>
+    <xs:attribute name="numInputs" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="minInputs" type="xs:unsignedByte" use="required" />
+  </xs:complexType>
+
+  <xs:complexType name="parallelGenericElem">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="255" name="input" type="inputElem"/>
+      <xs:element minOccurs="1" maxOccurs="1" name="output" type="outputElem"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="parallelIdenticalElem">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="input" type="inputElem"/>
+      <xs:element minOccurs="1" maxOccurs="1" name="output" type="outputElem"/>
+    </xs:sequence>
+    <xs:attribute name="numInputs" type="xs:unsignedByte" use="required" />
+  </xs:complexType>
+
+  <xs:complexType name="seriesGenericElem">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="255" name="input" type="inputElem"/>
+      <xs:element minOccurs="1" maxOccurs="1" name="output" type="outputElem"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="seriesIdenticalElem">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="input" type="inputElem"/>
+      <xs:element minOccurs="1" maxOccurs="1" name="output" type="outputElem"/>
+    </xs:sequence>
+    <xs:attribute name="numInputs" type="xs:unsignedByte" use="required" />
+  </xs:complexType>
+  
+  <xs:complexType name="blockElem">
+    <xs:choice>
+      <xs:element name="bridgeGeneric" type="bridgeGenericElem"/>
+      <xs:element name="bridgeIdentical" type="bridgeIdenticalElem"/>
+      <xs:element name="koonGeneric" type="koonGenericElem"/>
+      <xs:element name="koonIdentical" type="koonIdenticalElem"/>
+      <xs:element name="parallelGeneric" type="parallelGenericElem"/>
+      <xs:element name="parallelIdentical" type="parallelIdenticalElem"/>
+      <xs:element name="seriesGeneric" type="seriesGenericElem"/>
+      <xs:element name="seriesIdentical" type="seriesIdenticalElem"/>
+    </xs:choice>
+    <xs:attribute name="outputFilename" type="xs:string" use="optional" />
+  </xs:complexType>
+
+  <xs:element name="rbd">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="1" maxOccurs="1" name="time" type="timeElem" />
+        <xs:element minOccurs="1" maxOccurs="1" name="components">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="255" name="component">
+                <xs:complexType>
+                  <xs:choice>
+                    <xs:element name="custom" type="customElem" />
+                    <xs:element name="exponential" type="exponentialElem" />
+                    <xs:element name="lognormal" type="lognormalElem" />
+                    <xs:element name="normal" type="normalElem" />
+                    <xs:element name="weibull" type="weibullElem" />
+                  </xs:choice>
+                  <xs:attribute name="name" type="xs:string" use="required" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="1" maxOccurs="1" name="blocks">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="block" type="blockElem" />
+            </xs:sequence>
+            <xs:attribute name="system" type="xs:string" use="required" />
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
