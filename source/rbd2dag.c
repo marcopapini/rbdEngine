@@ -28,13 +28,10 @@
 #include <stdlib.h>
 
 
-static unsigned int numNodes;
-
-
-static struct node *buildDag(const struct rbd *const rbd, const unsigned int blockIdx, struct node *root, struct node **const parent);
-static unsigned int computeNumChildred(const struct block *const block);
-static struct node *searchNodeByBlock(struct node *const node, const struct block *const block);
-static int checkAcyclic(struct node *node);
+static struct node *buildDag(const struct rbd *const rbd, struct dag *dag, const enum INPUT input, const unsigned int idx, struct node **const parent);
+static struct node *searchNodeByElement(struct node *const root, const enum INPUT input, void *element);
+static int checkAcyclic(struct dag *dag);
+static int checkAcyclicRecursive(struct node *node);
 
 
 /**
@@ -48,40 +45,54 @@ static int checkAcyclic(struct node *node);
  *  i.e., it contains the expected number of nodes and it is actually acyclic.
  *
  * Parameters:
- *      rbd: RBD Data Structure used to create the RBD Parsing Tree
- *      root: set with the root of the RBD DAG
+ *      rbd: RBD Data Structure used to create the RBD DAG
+ *      dag: RBD DAG created by this function
  *
  * Return (int):
  *  0 if the RBD DAG has been created successfully, < 0 otherwise
  */
-int rbd2dag(const struct rbd *const rbd, struct node **root) {
+int rbd2dag(const struct rbd *const rbd, struct dag *dag) {
     struct node *res;
+    unsigned int nodeIdx;
 
     /* Allocate memory for current RBD DAG node */
-    *root = (struct node *)calloc(rbd->numBlocks, sizeof(struct node));
-    if (*root == NULL) {
+    dag->expectedNodes = rbd->numBlocks + rbd->numComponents;
+    dag->root = NULL;
+    dag->pivots = NULL;
+    dag->pivotsIdx = NULL;
+    dag->ancestorMatrix = NULL;
+    dag->root = (struct node *)calloc(dag->expectedNodes, sizeof(struct node));
+    dag->pivots = (struct node **)calloc(dag->expectedNodes, sizeof(struct node *));
+    dag->pivotsIdx = (unsigned int *)calloc(dag->expectedNodes, sizeof(unsigned int));
+    dag->ancestorMatrix = (unsigned char *)calloc(((dag->expectedNodes + 3) / 4) * dag->expectedNodes, sizeof(unsigned char));
+    if ((dag->root == NULL) || (dag->pivots == NULL) || (dag->pivotsIdx == NULL) || (dag->ancestorMatrix == NULL)) {
         fprintf(stderr, "Unable to allocate memory for RBD Directed Acyclic Graph nodes\n");
         return -1;
     }
 
     /* Set number of nodes in RBD DAG to 0 */
-    numNodes = 0;
+    dag->numNodes = 0;
 
     /* Build RBD DAG */
-    res = buildDag(rbd, rbd->systemBlockIdx, *root, NULL);
+    res = buildDag(rbd, dag, INPUT_BLOCK, rbd->systemBlockIdx, NULL);
     if (res == NULL) {
         fprintf(stderr, "Unable to create RBD Directed Acyclic Graph\n");
         return -1;
     }
 
-    if (rbd->numBlocks != numNodes) {
-        fprintf(stderr, "Invalid number of nodes in RBD DAG - Created %d - Expected %d\n", numNodes, rbd->numBlocks);
+    if (dag->expectedNodes != dag->numNodes) {
+        fprintf(stderr, "Invalid number of nodes in RBD DAG - Created %d - Expected %d\n", dag->numNodes, dag->expectedNodes);
         return -1;
     }
 
     /* Check that the RBD DAG is actually acyclic */
-    if (checkAcyclic(*root) < 0) {
+    if (checkAcyclic(dag) < 0) {
         return -1;
+    }
+
+    /* The root node is an ancestor of all other nodes */
+    for (nodeIdx = 0; nodeIdx < dag->numNodes; ++nodeIdx) {
+        setAncestor(dag, dag->root->nodeId, nodeIdx, ANCESTOR_YES);
     }
 
     return 0;
@@ -98,58 +109,96 @@ int rbd2dag(const struct rbd *const rbd, struct node **root) {
  *
  * Parameters:
  *      rbd: RBD Data Structure used to build the RBD DAG
- *      blockIdx: index of current block (referred to RBD Data Structure) to be
- *              inserted into the RBD DAG
- *      root: pointer to the root of the RBD DAG
+ *      dag: RBD DAG to be built
+ *      input: type of node to be inserted inside the RBD DAG
+ *      idx: index of current element (referred to RBD Data Structure) to be
+ *              inserted into the RBD DAG. The current element is a block if
+ *              input = INPUT_BLOCK, it is a component otherwise
  *      parent: pointer to the current child of parent's node, NULL if no
  *              parent exists
  *
  * Return (struct node *):
  *  Pointer to the node inserted into the RBD DAG
  */
-static struct node *buildDag(const struct rbd *const rbd, const unsigned int blockIdx, struct node *root, struct node **const parent) {
+static struct node *buildDag(const struct rbd *const rbd, struct dag *dag, const enum INPUT input, const unsigned int idx, struct node **const parent) {
     struct node *node;
     struct node *child;
+    unsigned int nodeIdx;
+    unsigned char numChildren;
     unsigned char childIdx;
-    unsigned char inputIdx;
 
     /* Retrieve current node */
-    node = &root[numNodes];
-    /* Increment number of nodes */
-    ++numNodes;
+    node = &dag->root[dag->numNodes];
+    /* Set the node ID and increment number of nodes */
+    node->nodeId = dag->numNodes++;
+
+    /* A node is always the ancestor of itself */
+    setAncestor(dag, node->nodeId, node->nodeId, ANCESTOR_YES);
 
     /* Attach current node to the RBD DAG */
     if (parent != NULL) {
         *parent = node;
+        node->refCount = 1;
     }
-    node->block = &rbd->blocks[blockIdx];
-    node->numChildren = computeNumChildred(&rbd->blocks[blockIdx]);
-    if (node->numChildren > 0) {
-        node->children = (struct node **)calloc(node->numChildren, sizeof(struct node *));
-        if (node->children == NULL) {
-            fprintf(stderr, "Unable to allocate memory for RBD DAG children of node\n");
-            return NULL;
+    node->input = input;
+    if (input == INPUT_BLOCK) {
+        node->component = NULL;
+        node->block = &rbd->blocks[idx];
+        numChildren = (node->block->bIsIdentical == 0) ? node->block->numInputs : 1;
+        node->numChildren = numChildren;
+        if (node->numChildren > 0) {
+            node->children = (struct node **)calloc(node->numChildren, sizeof(struct node *));
+            if (node->children == NULL) {
+                fprintf(stderr, "Unable to allocate memory for RBD DAG children of node\n");
+                return NULL;
+            }
         }
-    }
 
-    /* For each input of the current block... */
-    for (inputIdx = 0, childIdx = 0; inputIdx < rbd->blocks[blockIdx].numInputs; ++inputIdx) {
-        /* If and only if the current input is another block */
-        if (rbd->blocks[blockIdx].inputs[inputIdx].type == INPUT_BLOCK) {
-            /* Recursively search for the current input block into the RBD DAG */
-            child = searchNodeByBlock(root, &rbd->blocks[rbd->blocks[blockIdx].inputs[inputIdx].idx]);
-            /* Child node is not already included into the RBD DAG, add it */
-            if (child == NULL) {
-                /* Recursively build the RBD DAG */
-                child = buildDag(rbd, rbd->blocks[blockIdx].inputs[inputIdx].idx, root, &node->children[childIdx]);
+        /* For each child of the current block... */
+        for (childIdx = 0; childIdx < numChildren; ++childIdx) {
+            /* If and only if the current input is another block */
+            if (node->block->inputs[childIdx].type == INPUT_BLOCK) {
+                /* Recursively search for the current input block into the RBD DAG */
+                child = searchNodeByElement(dag->root, INPUT_BLOCK, &rbd->blocks[node->block->inputs[childIdx].idx]);
+                /* Child node is not already included into the RBD DAG, add it */
                 if (child == NULL) {
-                    return NULL;
+                    /* Recursively build the RBD DAG */
+                    child = buildDag(rbd, dag, INPUT_BLOCK, node->block->inputs[childIdx].idx, &node->children[childIdx]);
+                    if (child == NULL) {
+                        return NULL;
+                    }
                 }
-                ++childIdx;
+                else {
+                    ++child->refCount;
+                    node->children[childIdx] = child;
+                }
             }
             else {
-                node->children[childIdx] = child;
-                ++childIdx;
+                /* Recursively search for the current input component into the RBD DAG */
+                child = searchNodeByElement(dag->root, INPUT_COMPONENT, &rbd->components[node->block->inputs[childIdx].idx]);
+                /* Child node is not already included into the RBD DAG, add it */
+                if (child == NULL) {
+                    /* Recursively build the RBD DAG */
+                    child = buildDag(rbd, dag, INPUT_COMPONENT, node->block->inputs[childIdx].idx, &node->children[childIdx]);
+                    if (child == NULL) {
+                        return NULL;
+                    }
+                }
+                else {
+                    ++child->refCount;
+                    node->children[childIdx] = child;
+                }
+            }
+        }
+    }
+    else {
+        node->block = NULL;
+        node->component = &rbd->components[idx];
+        node->numChildren = 0;
+        /* The node associated with the component is not an ancestor of all other nodes */
+        for (nodeIdx = 0; nodeIdx < dag->expectedNodes; ++nodeIdx) {
+            if (nodeIdx != node->nodeId) {
+                setAncestor(dag, node->nodeId, nodeIdx, ANCESTOR_NO);
             }
         }
     }
@@ -158,63 +207,52 @@ static struct node *buildDag(const struct rbd *const rbd, const unsigned int blo
 }
 
 /**
- * computeNumChildred
+ * searchNodeByElement
  *
- * Compute the number of RBD DAG children of the requested block
- *
- * Description:
- *  This function computes the number of children of the RBD DAG node
- *  associated with the provided block
- *
- * Parameters:
- *      block: block for which the number of children is computed
- *
- * Return (unsigned int):
- *  The number of children of the RBD DAG node
- */
-static unsigned int computeNumChildred(const struct block *const block) {
-    unsigned int numChildren;
-    unsigned int idx;
-
-    for (idx = 0, numChildren = 0; idx < block->numInputs; ++idx) {
-        if (block->inputs[idx].type == INPUT_BLOCK) {
-            ++numChildren;
-        }
-    }
-
-    return numChildren;
-}
-
-/**
- * searchNodeByBlock
- *
- * Recursively navigate the RBD DAG to search for the requested block
+ * Recursively navigate the RBD DAG to search for the requested element
  *
  * Description:
- *  This recursive function visits all nodes of the RBD DAG
+ * This recursive function visits all nodes of the RBD DAG
  *  using Depth-First Search (DFS) and, if the current node
- *  references the requested block, it returns the current node.
+ *  references the requested element (block or component),
+ *  it returns the current node.
  *
  * Parameters:
  *      node: current node used to visit the DAG using DFS algorithm
- *      block: block to be searched for
+ *      input: type of node to be searched for inside the RBD DAG
+ *      element: element (block or component) to be searched for
  *
  * Return (struct node *):
  *  Pointer to the RBD DAG node that references the requested block, NULL if not found
  */
-static struct node *searchNodeByBlock(struct node *const node, const struct block *const block) {
+static struct node *searchNodeByElement(struct node *const node, const enum INPUT input, void *element) {
     unsigned char childIdx;
     struct node *res;
 
-    /* The current RBD DAG node references the requested block */
-    if (node->block == block) {
-        return node;
+    /* Is the element to be searched for a block? */
+    if (input == INPUT_BLOCK) {
+        /* Is the current node referencing a block? */
+        if (node->input == INPUT_BLOCK) {
+            /* The current RBD DAG root references the requested block */
+            if (node->block == (struct block *)element) {
+                return node;
+            }
+        }
+    }
+    else {
+        /* Is the current node referencing a component? */
+        if (node->input == INPUT_COMPONENT) {
+            /* The current RBD DAG root references the requested component */
+            if (node->component == (struct component *)element) {
+                return node;
+            }
+        }
     }
 
-    /* For each child, recursively search for the requested block */
+    /* For each child, recursively search for the requested element */
     for (childIdx = 0; childIdx < node->numChildren; ++childIdx) {
         if (node->children[childIdx] != NULL) {
-            res = searchNodeByBlock(node->children[childIdx], block);
+            res = searchNodeByElement(node->children[childIdx], input, element);
             if (res != NULL) {
                 return res;
             }
@@ -226,6 +264,26 @@ static struct node *searchNodeByBlock(struct node *const node, const struct bloc
 
 /**
  * checkAcyclic
+ *
+ * Navigate the RBD DAG to check if it is actually acyclic
+ *
+ * Description:
+ *  This function navigates the whole RBD DAG to verify that the acyclic
+ *  property is valid.
+ *
+ * Parameters:
+ *      dag: RBD DAG to be checked for acyclic property
+ *
+ * Return (int):
+ *  0 if no cycle has been detected, < 0 otherwise
+ */
+static int checkAcyclic(struct dag *dag) {
+    /* Recursively check if the root of the RBD DAG is acyclic */
+    return checkAcyclicRecursive(dag->root);
+}
+
+/**
+ * checkAcyclicRecursive
  *
  * Recursively navigate the RBD DAG to check if it is actually acyclic
  *
@@ -241,31 +299,31 @@ static struct node *searchNodeByBlock(struct node *const node, const struct bloc
  * Return (int):
  *  0 if no cycle has been detected, < 0 otherwise
  */
-static int checkAcyclic(struct node *node) {
+static int checkAcyclicRecursive(struct node *node) {
     unsigned char childIdx;
 
-    /* Check if node is under visiting, i.e., the RBD DAG is not acyclic */
-    if (node->state == DAG_VISITING) {
-        fprintf(stderr, "Invalid RBD Dependency DAG - Cycle detected at block %s\n", node->block->outputName);
-        return -1;
-    }
-    /* Check if node is fully visited, no need to visit again */
-    if (node->state == DAG_VISITED) {
-        return 0;
-    }
-
     /* Current node is under visit */
-    node->state = DAG_VISITING;
+    node->status = DAG_VISITING;
 
     /* For each child, recursively check the absence of cycles */
     for (childIdx = 0; childIdx < node->numChildren; ++childIdx) {
-        if (checkAcyclic(node->children[childIdx]) < 0) {
+        /* Check if child is under visiting, i.e., the RBD DAG is not acyclic */
+        if (node->children[childIdx]->status == DAG_VISITING) {
+            fprintf(stderr, "Invalid RBD Dependency DAG - Cycle detected at block %s\n",
+                    node->children[childIdx]->block->outputName);
             return -1;
+        }
+        /* Is the child not fully visited? */
+        if (node->children[childIdx]->status != DAG_VISITED) {
+            /* Recursively check the child */
+            if (checkAcyclicRecursive(node->children[childIdx]) < 0) {
+                return -1;
+            }
         }
     }
 
     /* Current node has been fully visited */
-    node->state = DAG_VISITED;
+    node->status = DAG_VISITED;
 
     return 0;
 }

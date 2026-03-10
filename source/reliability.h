@@ -112,5 +112,39 @@ int normalReliability(const struct time *const time, struct component *const com
  */
 int weibullReliability(const struct time *const time, struct component *const component);
 
+/**
+ * gammaReliability
+ *
+ * Compute the Reliability curve using the Gamma distribution
+ *
+ * Description:
+ *  This function computes the Reliability curve of the Gamma distribution.
+ *
+ * Parameters:
+ *      time: time parameters used to compute the reliability curve
+ *      component: updated with the computed reliability curve
+ *
+ * Return (int):
+ *  0 if the Reliability curve has been computed successfully, < 0 otherwise
+ */
+int gammaReliability(const struct time *const time, struct component *const component);
+
+/**
+ * birnbaumSaundersReliability
+ *
+ * Compute the Reliability curve using the Birnbaum-Saunders distribution
+ *
+ * Description:
+ *  This function computes the Reliability curve of the Birnbaum-Saunders distribution.
+ *
+ * Parameters:
+ *      time: time parameters used to compute the reliability curve
+ *      component: updated with the computed reliability curve
+ *
+ * Return (int):
+ *  0 if the Reliability curve has been computed successfully, < 0 otherwise
+ */
+int birnbaumSaundersReliability(const struct time *const time, struct component *const component);
+
 
 #endif /* RELIABILITY_H */

@@ -52,47 +52,41 @@ void cleanUpRbd(struct rbd *const rbd) {
         /* For each component... */
         for (cIdx = 0; cIdx < rbd->numComponents; ++cIdx) {
             /* Free resources allocated during XML document parsing */
-            if (rbd->components[cIdx].name != NULL) {
-                xmlFree(rbd->components[cIdx].name);
-            }
+            cleanUpXmlField(&rbd->components[cIdx].name);
             if (rbd->components[cIdx].type == DST_CUSTOM) {
-                if (rbd->components[cIdx].params.c.filename != NULL) {
-                    xmlFree(rbd->components[cIdx].params.c.filename);
-                }
+                cleanUpXmlField(&rbd->components[cIdx].params.c.filename);
             }
-            if (rbd->components[cIdx].type == DST_EXPONENTIAL) {
-                if (rbd->components[cIdx].params.e.outputFilename != NULL) {
-                    xmlFree(rbd->components[cIdx].params.e.outputFilename);
-                }
+            else if (rbd->components[cIdx].type == DST_EXPONENTIAL) {
+                cleanUpXmlField(&rbd->components[cIdx].params.e.outputFilename);
             }
-            if (rbd->components[cIdx].type == DST_LOGNORMAL) {
-                if (rbd->components[cIdx].params.l.outputFilename != NULL) {
-                    xmlFree(rbd->components[cIdx].params.l.outputFilename);
-                }
+            else if (rbd->components[cIdx].type == DST_LOGNORMAL) {
+                cleanUpXmlField(&rbd->components[cIdx].params.l.outputFilename);
             }
-            if (rbd->components[cIdx].type == DST_NORMAL) {
-                if (rbd->components[cIdx].params.n.outputFilename != NULL) {
-                    xmlFree(rbd->components[cIdx].params.n.outputFilename);
-                }
+            else if (rbd->components[cIdx].type == DST_NORMAL) {
+                cleanUpXmlField(&rbd->components[cIdx].params.n.outputFilename);
             }
-            if (rbd->components[cIdx].type == DST_WEIBULL) {
-                if (rbd->components[cIdx].params.w.outputFilename != NULL) {
-                    xmlFree(rbd->components[cIdx].params.w.outputFilename);
-                }
+            else if (rbd->components[cIdx].type == DST_WEIBULL) {
+                cleanUpXmlField(&rbd->components[cIdx].params.w.outputFilename);
+            }
+            else if (rbd->components[cIdx].type == DST_GAMMA) {
+                cleanUpXmlField(&rbd->components[cIdx].params.g.outputFilename);
+            }
+            else {
+                cleanUpXmlField(&rbd->components[cIdx].params.bs.outputFilename);
             }
             /* Free Reliability curve of component */
             if (rbd->components[cIdx].reliability != NULL) {
                 free(rbd->components[cIdx].reliability);
+                rbd->components[cIdx].reliability = NULL;
             }
         }
         /* Free components array */
         free(rbd->components);
+        rbd->components = NULL;
     }
 
     /* Free resources allocated during XML document parsing */
-    if (rbd->systemBlock != NULL) {
-        xmlFree(rbd->systemBlock);
-    }
+    cleanUpXmlField(&rbd->systemBlock);
 
     /* Check if blocks array has been allocated */
     if (rbd->blocks != NULL) {
@@ -104,34 +98,29 @@ void cleanUpRbd(struct rbd *const rbd) {
                     /* For each input... */
                     for (cIdx = 0; cIdx < rbd->blocks[bIdx].numInputs; ++cIdx) {
                         /* Free resources allocated during XML document parsing */
-                        if (rbd->blocks[bIdx].inputs[cIdx].name != NULL) {
-                            xmlFree(rbd->blocks[bIdx].inputs[cIdx].name);
-                        }
+                        cleanUpXmlField(&rbd->blocks[bIdx].inputs[cIdx].name);
                     }
                 }
                 else {
                     /* Free resources allocated during XML document parsing */
-                    if (rbd->blocks[bIdx].inputs[0].name != NULL) {
-                        xmlFree(rbd->blocks[bIdx].inputs[0].name);
-                    }
+                    cleanUpXmlField(&rbd->blocks[bIdx].inputs[0].name);
                 }
                 /* Free inputs array */
                 free(rbd->blocks[bIdx].inputs);
+                rbd->blocks[bIdx].inputs = NULL;
             }
             /* Free resources allocated during XML document parsing */
-            if (rbd->blocks[bIdx].outputName != NULL) {
-                xmlFree(rbd->blocks[bIdx].outputName);
-            }
-            if (rbd->blocks[bIdx].outputFilename != NULL) {
-                xmlFree(rbd->blocks[bIdx].outputFilename);
-            }
+            cleanUpXmlField(&rbd->blocks[bIdx].outputName);
+            cleanUpXmlField(&rbd->blocks[bIdx].outputFilename);
             /* Free Reliability curve of block */
             if (rbd->blocks[bIdx].reliability != NULL) {
                 free(rbd->blocks[bIdx].reliability);
+                rbd->blocks[bIdx].reliability = NULL;
             }
         }
         /* Free blocks array */
         free(rbd->blocks);
+        rbd->blocks = NULL;
     }
 }
 
@@ -147,10 +136,47 @@ void cleanUpRbd(struct rbd *const rbd) {
  * Parameters:
  *      dag: pointer to the RBD DAG
  */
-void cleanUpDag(struct node *const dag) {
-    /* Clean-up memory allocated by RBD DAG */
-    if (dag != NULL) {
-        cleanDagNode(dag);
+void cleanUpDag(struct dag *dag) {
+    /* Clean-up memory allocated by RBD DAG nodes */
+    if (dag->root != NULL) {
+        cleanDagNode(dag->root);
+        free(dag->root);
+        dag->root = NULL;
+    }
+    /* Clean-up memory allocated by RBD DAG pivot nodes */
+    if (dag->pivots != NULL) {
+        free(dag->pivots);
+        dag->pivots = NULL;
+    }
+    /* Clean-up memory allocated by RBD DAG pivot indexes */
+    if (dag->pivotsIdx != NULL) {
+        free(dag->pivotsIdx);
+        dag->pivotsIdx = NULL;
+    }
+    /* Clean-up memory allocated by RBD DAG ancestors matrix */
+    if (dag->ancestorMatrix != NULL) {
+        free(dag->ancestorMatrix);
+        dag->ancestorMatrix = NULL;
+    }
+}
+
+/**
+ * cleanUpXmlField
+ *
+ * Clean up a XML field
+ *
+ * Description:
+ *  This function cleans up the field created during XML
+ *  document parsing by freeing the allocated memory.
+ *
+ * Parameters:
+ *      field: field to be cleaned up
+ */
+void cleanUpXmlField(char **field) {
+    /* Free resources allocated during XML document parsing */
+    if (*field != NULL) {
+        xmlFree(*field);
+        *field = NULL;
     }
 }
 
@@ -171,14 +197,15 @@ void cleanUpDag(struct node *const dag) {
 static void cleanDagNode(struct node *const node) {
     unsigned char idx;
 
-    /* Clean-up all children */
-    for (idx = 0; idx < node->numChildren; ++idx) {
-        if (node->children[idx] != NULL) {
-            cleanDagNode(node->children[idx]);
-        }
-    }
     /* Clean-up the current RBD DAG node */
     if (node->children != NULL) {
+        /* Clean-up all children */
+        for (idx = 0; idx < node->numChildren; ++idx) {
+            if (node->children[idx] != NULL) {
+                cleanDagNode(node->children[idx]);
+            }
+        }
         free(node->children);
+        node->children = NULL;
     }
 }

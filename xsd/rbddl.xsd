@@ -8,7 +8,7 @@
       <xs:enumeration value="identical" />
     </xs:restriction>
   </xs:simpleType>
-  
+
   <xs:simpleType name="startTime">
     <xs:restriction base="xs:double"/>
   </xs:simpleType>
@@ -47,6 +47,16 @@
   <xs:complexType name="weibullElem">
     <xs:attribute name="lambda" type="xs:double" use="required" />
     <xs:attribute name="k" type="xs:double" use="required" />
+    <xs:attribute name="outputFilename" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="gammaElem">
+    <xs:attribute name="alpha" type="xs:double" use="required" />
+    <xs:attribute name="theta" type="xs:double" use="required" />
+    <xs:attribute name="outputFilename" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="birnbaumSaundersElem">
+    <xs:attribute name="alpha" type="xs:double" use="required" />
+    <xs:attribute name="beta" type="xs:double" use="required" />
     <xs:attribute name="outputFilename" type="xs:string" use="optional" />
   </xs:complexType>
 
@@ -114,7 +124,7 @@
     </xs:sequence>
     <xs:attribute name="numInputs" type="xs:unsignedByte" use="required" />
   </xs:complexType>
-  
+
   <xs:complexType name="blockElem">
     <xs:choice>
       <xs:element name="bridgeGeneric" type="bridgeGenericElem"/>
@@ -144,6 +154,8 @@
                     <xs:element name="lognormal" type="lognormalElem" />
                     <xs:element name="normal" type="normalElem" />
                     <xs:element name="weibull" type="weibullElem" />
+                    <xs:element name="gamma" type="gammaElem" />
+                    <xs:element name="birnbaum_saunders" type="birnbaumSaundersElem" />
                   </xs:choice>
                   <xs:attribute name="name" type="xs:string" use="required" />
                 </xs:complexType>

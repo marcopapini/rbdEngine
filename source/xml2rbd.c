@@ -283,7 +283,7 @@ static int processComponentElement(const xmlNode *const componentNode, struct co
                 xmlFree(attr);
                 component->params.n.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
             }
-            else {
+            else if (xmlStrEqual(node->name, BAD_CAST "weibull")) {
                 /* Process the <weibull> element */
                 component->type = DST_WEIBULL;
                 attr = xmlGetProp(node, BAD_CAST "lambda");
@@ -295,6 +295,32 @@ static int processComponentElement(const xmlNode *const componentNode, struct co
                 component->params.w.k = strtod((char *)attr, &endPtr);
                 xmlFree(attr);
                 component->params.w.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+            }
+            else if (xmlStrEqual(node->name, BAD_CAST "gamma")) {
+                /* Process the <gamma> element */
+                component->type = DST_GAMMA;
+                attr = xmlGetProp(node, BAD_CAST "alpha");
+                IS_VALID_ATTR("rbd/components/component/gamma@alpha", attr);
+                component->params.g.alpha = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "theta");
+                IS_VALID_ATTR("rbd/components/component/gamma@theta", attr);
+                component->params.g.theta = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                component->params.g.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+            }
+            else {
+                /* Process the <birnbaum_saunders> element */
+                component->type = DST_BIRNBAUM_SAUNDERS;
+                attr = xmlGetProp(node, BAD_CAST "alpha");
+                IS_VALID_ATTR("rbd/components/component/gamma@alpha", attr);
+                component->params.bs.alpha = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "beta");
+                IS_VALID_ATTR("rbd/components/component/gamma@beta", attr);
+                component->params.bs.beta = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                component->params.bs.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
             }
             break;
         }
@@ -699,8 +725,18 @@ static int computeComponentReliability(struct rbd * const rbd) {
                 }
                 break;
             case DST_WEIBULL:
-            default:
                 if (weibullReliability(&rbd->time, &rbd->components[ii]) < 0) {
+                    return -1;
+                }
+                break;
+            case DST_GAMMA:
+                if (gammaReliability(&rbd->time, &rbd->components[ii]) < 0) {
+                    return -1;
+                }
+                break;
+            case DST_BIRNBAUM_SAUNDERS:
+            default:
+                if (birnbaumSaundersReliability(&rbd->time, &rbd->components[ii]) < 0) {
                     return -1;
                 }
                 break;

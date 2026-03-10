@@ -44,7 +44,7 @@
  * Return (int):
  *  0 if the RBD DAG has been created successfully, < 0 otherwise
  */
-int rbd2dag(const struct rbd *const rbd, struct node **root);
+int rbd2dag(const struct rbd *const rbd, struct dag *dag);
 
 
 #endif /* RBD2DAG_H */

@@ -46,7 +46,7 @@
  * Return (int):
  *  0 if the RBD Reliability curve has been evaluated successfully, < 0 otherwise
  */
-int evaluateRbd(struct rbd *rbd, struct node *dag);
+int evaluateRbd(struct rbd *rbd, struct dag *dag);
 
 
 #endif /* EVALUATE_H */

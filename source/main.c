@@ -34,7 +34,7 @@
 
 static xmlDocPtr doc;
 static struct rbd rbd;
-static struct node *dag;
+static struct dag dag;
 
 
 static void cleanUp();
@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
     }
 
     /* Evaluate the Reliability curve of the overall RBD */
-    if (evaluateRbd(&rbd, dag) < 0) {
+    if (evaluateRbd(&rbd, &dag) < 0) {
         cleanUp();
         return -1;
     }
@@ -133,7 +133,7 @@ static void cleanUp() {
     xmlCleanupParser();
 
     /* Clean-up the RBD Parsing Tree */
-    cleanUpDag(dag);
+    cleanUpDag(&dag);
     /* Clean-up the RBD Data Structure */
     cleanUpRbd(&rbd);
 }

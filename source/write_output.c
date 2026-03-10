@@ -97,6 +97,24 @@ int writeOutputFiles(struct rbd *rbd) {
                 }
                 break;
 
+            case DST_GAMMA:
+                if (rbd->components[idx].params.g.outputFilename != NULL) {
+                    if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
+                                rbd->components[idx].params.g.outputFilename) < 0) {
+                        return -1;
+                    }
+                }
+                break;
+
+            case DST_BIRNBAUM_SAUNDERS:
+                if (rbd->components[idx].params.bs.outputFilename != NULL) {
+                    if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
+                                rbd->components[idx].params.bs.outputFilename) < 0) {
+                        return -1;
+                    }
+                }
+                break;
+
             case DST_CUSTOM:
             default:
                 break;

@@ -23,6 +23,7 @@
 
 #include "reliability.h"
 
+#include "gamma_p.h"
 #include "rbddata.h"
 
 #include <math.h>
@@ -43,6 +44,7 @@ static double exponentialCdf(const double x, const double lambda);
 static double lognormalCdf(const double x, const double mu, const double sigma);
 static double normalCdf(const double x, const double mu, const double sigma);
 static double weibullCdf(const double x, const double lambda, const double k);
+static double birnbaumSaundersCdf(const double x, const double alpha, const double beta);
 
 
 /**
@@ -247,6 +249,86 @@ int weibullReliability(const struct time *const time, struct component *const co
         component->reliability[idx] = 1.0 - weibullCdf(x, component->params.w.lambda, component->params.w.k);
         if (component->reliability[idx] < 0.0) {
             fprintf(stderr, "Unable to compute reliability with Weibull distribution\n");
+            return -1;
+        }
+        x += time->step;
+    }
+
+    return 0;
+}
+
+/**
+ * gammaReliability
+ *
+ * Compute the Reliability curve using the Gamma distribution
+ *
+ * Description:
+ *  This function computes the Reliability curve of the Gamma distribution.
+ *
+ * Parameters:
+ *      time: time parameters used to compute the reliability curve
+ *      component: updated with the computed reliability curve
+ *
+ * Return (int):
+ *  0 if the Reliability curve has been computed successfully, < 0 otherwise
+ */
+int gammaReliability(const struct time *const time, struct component *const component) {
+    unsigned int idx;
+    double x;
+
+    /* Allocate memory for reliability curve */
+    component->reliability = (double *)malloc(time->numTimes * sizeof(double));
+    if (component->reliability == NULL) {
+        fprintf(stderr, "Unable to allocate memory for RELIABILITY array\n");
+        return -1;
+    }
+
+    /* Compute reliability curve using Gamma distribution */
+    x = time->start;
+    for (idx = 0; idx < time->numTimes; ++idx) {
+        component->reliability[idx] = 1.0 - gamma_p(component->params.g.alpha, x / component->params.g.theta);
+        if (component->reliability[idx] < 0.0) {
+            fprintf(stderr, "Unable to compute reliability with Gamma distribution\n");
+            return -1;
+        }
+        x += time->step;
+    }
+
+    return 0;
+}
+
+/**
+ * birnbaumSaundersReliability
+ *
+ * Compute the Reliability curve using the Birnbaum-Saunders distribution
+ *
+ * Description:
+ *  This function computes the Reliability curve of the Birnbaum-Saunders distribution.
+ *
+ * Parameters:
+ *      time: time parameters used to compute the reliability curve
+ *      component: updated with the computed reliability curve
+ *
+ * Return (int):
+ *  0 if the Reliability curve has been computed successfully, < 0 otherwise
+ */
+int birnbaumSaundersReliability(const struct time *const time, struct component *const component) {
+    unsigned int idx;
+    double x;
+
+    /* Allocate memory for reliability curve */
+    component->reliability = (double *)malloc(time->numTimes * sizeof(double));
+    if (component->reliability == NULL) {
+        fprintf(stderr, "Unable to allocate memory for RELIABILITY array\n");
+        return -1;
+    }
+
+    /* Compute reliability curve using Birnbaum-Saunders distribution */
+    x = time->start;
+    for (idx = 0; idx < time->numTimes; ++idx) {
+        component->reliability[idx] = 1.0 - birnbaumSaundersCdf(x, component->params.bs.alpha, component->params.bs.beta);
+        if (component->reliability[idx] < 0.0) {
+            fprintf(stderr, "Unable to compute reliability with Birnbaum-Saunders distribution\n");
             return -1;
         }
         x += time->step;
@@ -542,4 +624,28 @@ static double weibullCdf(const double x, const double lambda, const double k) {
         cdf = 0.0;
     }
     return cdf;
+}
+
+/**
+ * birnbaumSaundersCdf
+ *
+ * Compute the CDF of the Birnbaum-Saunders distribution
+ *
+ * Description:
+ *  This function computes the CDF of the Birnbaum-Saunders distribution, with parameters alpha
+ *  and beta, evaluated at x.
+ *
+ * Parameters:
+ *      x: value (abscissa) at which the CDF is evaluated
+ *      alpha: alpha parameter of the Birnbaum-Saunders distribution
+ *      beta: beta parameter of the Birnbaum-Saunders distribution (>= 0.0)
+ *
+ * Return (double):
+ *  The evaluated CDF at x (in [0.0, 1.0]) if successful, -1.0 otherwise
+ */
+static double birnbaumSaundersCdf(const double x, const double alpha, const double beta) {
+    if (x <= 0.0) {
+        return 0.0;
+    }
+    return normalCdf((1.0 / alpha) * (sqrt(x / beta) - sqrt(beta / x)), 0.0, 1.0);
 }
