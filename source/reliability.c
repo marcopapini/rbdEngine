@@ -73,20 +73,20 @@ int customReliability(const struct time *const time, struct component *const com
     }
 
     /* Open file containing Custom distribution */
-    pFile = fopen(component->params.c.filename, "r");
+    pFile = fopen(component->params.rel_c.filename, "r");
     if (pFile == NULL) {
-        fprintf(stderr, "Unable to open file \'%s\' with Custom distribution\n", component->params.c.filename);
+        fprintf(stderr, "Unable to open file \'%s\' with Custom distribution\n", component->params.rel_c.filename);
         return -1;
     }
 
     /* Check Custom distribution file header */
-    if (checkCustomHeader(pFile, component->params.c.filename, time) < 0) {
+    if (checkCustomHeader(pFile, component->params.rel_c.filename, time) < 0) {
         fclose(pFile);
         return -1;
     }
 
     /* Extract the reliability curve from Custom distribution file */
-    if (extractCustomReliability(pFile, component->params.c.filename, time, component) < 0) {
+    if (extractCustomReliability(pFile, component->params.rel_c.filename, time, component) < 0) {
         fclose(pFile);
         return -1;
     }
@@ -126,7 +126,7 @@ int exponentialReliability(const struct time *const time, struct component *cons
     /* Compute reliability curve using Exponential distribution */
     x = time->start;
     for (idx = 0; idx < time->numTimes; ++idx) {
-        component->reliability[idx] = 1.0 - exponentialCdf(x, component->params.e.lambda);
+        component->reliability[idx] = 1.0 - exponentialCdf(x, component->params.rel_e.lambda);
         if (component->reliability[idx] < 0.0) {
             fprintf(stderr, "Unable to compute reliability with Exponential distribution\n");
             return -1;
@@ -166,7 +166,7 @@ int lognormalReliability(const struct time *const time, struct component *const 
     /* Compute reliability curve using Log-normal distribution */
     x = time->start;
     for (idx = 0; idx < time->numTimes; ++idx) {
-        component->reliability[idx] = 1.0 - lognormalCdf(x, component->params.l.mu, component->params.l.sigma);
+        component->reliability[idx] = 1.0 - lognormalCdf(x, component->params.rel_l.mu, component->params.rel_l.sigma);
         if (component->reliability[idx] < 0.0) {
             fprintf(stderr, "Unable to compute reliability with Log-normal distribution\n");
             return -1;
@@ -206,7 +206,7 @@ int normalReliability(const struct time *const time, struct component *const com
     /* Compute reliability curve using Normal distribution */
     x = time->start;
     for (idx = 0; idx < time->numTimes; ++idx) {
-        component->reliability[idx] = 1.0 - normalCdf(x, component->params.n.mu, component->params.n.sigma);
+        component->reliability[idx] = 1.0 - normalCdf(x, component->params.rel_n.mu, component->params.rel_n.sigma);
         if (component->reliability[idx] < 0.0) {
             fprintf(stderr, "Unable to compute reliability with Normal distribution\n");
             return -1;
@@ -246,7 +246,7 @@ int weibullReliability(const struct time *const time, struct component *const co
     /* Compute reliability curve using Weibull distribution */
     x = time->start;
     for (idx = 0; idx < time->numTimes; ++idx) {
-        component->reliability[idx] = 1.0 - weibullCdf(x, component->params.w.lambda, component->params.w.k);
+        component->reliability[idx] = 1.0 - weibullCdf(x, component->params.rel_w.lambda, component->params.rel_w.k);
         if (component->reliability[idx] < 0.0) {
             fprintf(stderr, "Unable to compute reliability with Weibull distribution\n");
             return -1;
@@ -286,7 +286,7 @@ int gammaReliability(const struct time *const time, struct component *const comp
     /* Compute reliability curve using Gamma distribution */
     x = time->start;
     for (idx = 0; idx < time->numTimes; ++idx) {
-        component->reliability[idx] = 1.0 - gamma_p(component->params.g.alpha, x / component->params.g.theta);
+        component->reliability[idx] = 1.0 - gamma_p(component->params.rel_g.alpha, x / component->params.rel_g.theta);
         if (component->reliability[idx] < 0.0) {
             fprintf(stderr, "Unable to compute reliability with Gamma distribution\n");
             return -1;
@@ -326,7 +326,7 @@ int birnbaumSaundersReliability(const struct time *const time, struct component 
     /* Compute reliability curve using Birnbaum-Saunders distribution */
     x = time->start;
     for (idx = 0; idx < time->numTimes; ++idx) {
-        component->reliability[idx] = 1.0 - birnbaumSaundersCdf(x, component->params.bs.alpha, component->params.bs.beta);
+        component->reliability[idx] = 1.0 - birnbaumSaundersCdf(x, component->params.rel_bs.alpha, component->params.rel_bs.beta);
         if (component->reliability[idx] < 0.0) {
             fprintf(stderr, "Unable to compute reliability with Birnbaum-Saunders distribution\n");
             return -1;
@@ -517,14 +517,11 @@ static double exponentialCdf(const double x, const double lambda) {
     if (lambda <= 0.0) {
         return -1.0;
     }
-    cdf = 1.0 - exp(-lambda * x);
-    if (cdf > 1.0) {
-        cdf = 1.0;
+    if (x <= 0.0) {
+        return 0.0;
     }
-    if (cdf < 0.0 || isnan(cdf)) {
-        cdf = 0.0;
-    }
-    return cdf;
+    cdf = -expm1(-lambda * x);
+    return fmax(fmin(1.0, cdf), 0.0);
 }
 
 /**
@@ -539,7 +536,7 @@ static double exponentialCdf(const double x, const double lambda) {
  * Parameters:
  *      x: value (abscissa) at which the CDF is evaluated
  *      mu: mu parameter of the Log-normal distribution
- *      sigma: sigma parameter of the Log-normal distribution (>= 0.0)
+ *      sigma: sigma parameter of the Log-normal distribution (> 0.0)
  *
  * Return (double):
  *  The evaluated CDF at x (in [0.0, 1.0]) if successful, -1.0 otherwise
@@ -547,17 +544,14 @@ static double exponentialCdf(const double x, const double lambda) {
 static double lognormalCdf(const double x, const double mu, const double sigma) {
     double cdf;
 
-    if ((mu < 0.0) || (sigma <= 0.0)) {
+    if (sigma <= 0.0) {
         return -1.0;
     }
+    if (x <= 0.0) {
+        return 0.0;
+    }
     cdf = 0.5 * erfc(-((log(x) - mu) / sigma) * M_SQRT1_2);
-    if (cdf > 1.0) {
-        cdf = 1.0;
-    }
-    if (cdf < 0.0 || isnan(cdf)) {
-        cdf = 0.0;
-    }
-    return cdf;
+    return fmax(fmin(1.0, cdf), 0.0);
 }
 
 /**
@@ -572,7 +566,7 @@ static double lognormalCdf(const double x, const double mu, const double sigma) 
  * Parameters:
  *      x: value (abscissa) at which the CDF is evaluated
  *      mu: mu parameter of the Normal distribution
- *      sigma: sigma parameter of the Normal distribution (>= 0.0)
+ *      sigma: sigma parameter of the Normal distribution (> 0.0)
  *
  * Return (double):
  *  The evaluated CDF at x (in [0.0, 1.0]) if successful, -1.0 otherwise
@@ -584,13 +578,7 @@ static double normalCdf(const double x, const double mu, const double sigma) {
         return -1.0;
     }
     cdf = 0.5 * erfc(-((x - mu) / sigma) * M_SQRT1_2);
-    if (cdf > 1.0) {
-        cdf = 1.0;
-    }
-    if (cdf < 0.0 || isnan(cdf)) {
-        cdf = 0.0;
-    }
-    return cdf;
+    return fmax(fmin(1.0, cdf), 0.0);
 }
 
 /**
@@ -616,14 +604,11 @@ static double weibullCdf(const double x, const double lambda, const double k) {
     if ((lambda <= 0.0) || (k <= 0)) {
         return -1.0;
     }
-    cdf = 1.0 - exp(0.0 - pow(x / lambda, k));
-    if (cdf > 1.0) {
-        cdf = 1.0;
+    if (x <= 0.0) {
+        return 0.0;
     }
-    if (cdf < 0.0 || isnan(cdf)) {
-        cdf = 0.0;
-    }
-    return cdf;
+    cdf = -expm1(0.0 - pow(x / lambda, k));
+    return fmax(fmin(1.0, cdf), 0.0);
 }
 
 /**
@@ -637,13 +622,16 @@ static double weibullCdf(const double x, const double lambda, const double k) {
  *
  * Parameters:
  *      x: value (abscissa) at which the CDF is evaluated
- *      alpha: alpha parameter of the Birnbaum-Saunders distribution
- *      beta: beta parameter of the Birnbaum-Saunders distribution (>= 0.0)
+ *      alpha: alpha parameter of the Birnbaum-Saunders distribution (> 0.0)
+ *      beta: beta parameter of the Birnbaum-Saunders distribution (> 0.0)
  *
  * Return (double):
  *  The evaluated CDF at x (in [0.0, 1.0]) if successful, -1.0 otherwise
  */
 static double birnbaumSaundersCdf(const double x, const double alpha, const double beta) {
+    if ((alpha <= 0.0) || (beta <= 0.0)) {
+        return -1.0;
+    }
     if (x <= 0.0) {
         return 0.0;
     }

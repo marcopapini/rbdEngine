@@ -1,5 +1,5 @@
 /*
- *  Component: rbd_data.c
+ *  Component: rbddata.c
  *  Management of Data Structures equivalent to RBD Description Language
  *
  *  rbdEngine - Evaluate the reliability of a given Reliability Block Diagram
@@ -23,12 +23,8 @@
 
 #include "rbddata.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <libxml/globals.h>
-
-
-static void cleanDagNode(struct node *const node);
 
 
 /**
@@ -54,25 +50,46 @@ void cleanUpRbd(struct rbd *const rbd) {
             /* Free resources allocated during XML document parsing */
             cleanUpXmlField(&rbd->components[cIdx].name);
             if (rbd->components[cIdx].type == DST_CUSTOM) {
-                cleanUpXmlField(&rbd->components[cIdx].params.c.filename);
+                cleanUpXmlField(&rbd->components[cIdx].params.rel_c.filename);
             }
             else if (rbd->components[cIdx].type == DST_EXPONENTIAL) {
-                cleanUpXmlField(&rbd->components[cIdx].params.e.outputFilename);
+                cleanUpXmlField(&rbd->components[cIdx].params.rel_e.outputFilename);
             }
             else if (rbd->components[cIdx].type == DST_LOGNORMAL) {
-                cleanUpXmlField(&rbd->components[cIdx].params.l.outputFilename);
+                cleanUpXmlField(&rbd->components[cIdx].params.rel_l.outputFilename);
             }
             else if (rbd->components[cIdx].type == DST_NORMAL) {
-                cleanUpXmlField(&rbd->components[cIdx].params.n.outputFilename);
+                cleanUpXmlField(&rbd->components[cIdx].params.rel_n.outputFilename);
             }
             else if (rbd->components[cIdx].type == DST_WEIBULL) {
-                cleanUpXmlField(&rbd->components[cIdx].params.w.outputFilename);
+                cleanUpXmlField(&rbd->components[cIdx].params.rel_w.outputFilename);
             }
             else if (rbd->components[cIdx].type == DST_GAMMA) {
-                cleanUpXmlField(&rbd->components[cIdx].params.g.outputFilename);
+                cleanUpXmlField(&rbd->components[cIdx].params.rel_g.outputFilename);
+            }
+            else if (rbd->components[cIdx].type == DST_BIRNBAUM_SAUNDERS) {
+                cleanUpXmlField(&rbd->components[cIdx].params.rel_bs.outputFilename);
+            }
+            else if (rbd->components[cIdx].type == DST_GOEL_OKUMOTO) {
+                cleanUpXmlField(&rbd->components[cIdx].params.nhpp_go.outputFilename);
+            }
+            else if (rbd->components[cIdx].type == DST_YAMADA_S_SHAPED) {
+                cleanUpXmlField(&rbd->components[cIdx].params.nhpp_yss.outputFilename);
+            }
+            else if (rbd->components[cIdx].type == DST_MUSA_OKUMOTO) {
+                cleanUpXmlField(&rbd->components[cIdx].params.nhpp_mo.outputFilename);
+            }
+            else if (rbd->components[cIdx].type == DST_OHBA_S_SHAPED) {
+                cleanUpXmlField(&rbd->components[cIdx].params.nhpp_oss.outputFilename);
+            }
+            else if (rbd->components[cIdx].type == DST_GOEL_GENERALIZED) {
+                cleanUpXmlField(&rbd->components[cIdx].params.nhpp_gg.outputFilename);
+            }
+            else if (rbd->components[cIdx].type == DST_KAPUR_GARG_3S) {
+                cleanUpXmlField(&rbd->components[cIdx].params.nhpp_kg3.outputFilename);
             }
             else {
-                cleanUpXmlField(&rbd->components[cIdx].params.bs.outputFilename);
+                cleanUpXmlField(&rbd->components[cIdx].params.nhpp_pz.outputFilename);
             }
             /* Free Reliability curve of component */
             if (rbd->components[cIdx].reliability != NULL) {
@@ -125,42 +142,6 @@ void cleanUpRbd(struct rbd *const rbd) {
 }
 
 /**
- * cleanUpDag
- *
- * Clean up the RBD DAG
- *
- * Description:
- *  This function cleans up the provided RBD DAG by freeing
- *  the allocated memory
- *
- * Parameters:
- *      dag: pointer to the RBD DAG
- */
-void cleanUpDag(struct dag *dag) {
-    /* Clean-up memory allocated by RBD DAG nodes */
-    if (dag->root != NULL) {
-        cleanDagNode(dag->root);
-        free(dag->root);
-        dag->root = NULL;
-    }
-    /* Clean-up memory allocated by RBD DAG pivot nodes */
-    if (dag->pivots != NULL) {
-        free(dag->pivots);
-        dag->pivots = NULL;
-    }
-    /* Clean-up memory allocated by RBD DAG pivot indexes */
-    if (dag->pivotsIdx != NULL) {
-        free(dag->pivotsIdx);
-        dag->pivotsIdx = NULL;
-    }
-    /* Clean-up memory allocated by RBD DAG ancestors matrix */
-    if (dag->ancestorMatrix != NULL) {
-        free(dag->ancestorMatrix);
-        dag->ancestorMatrix = NULL;
-    }
-}
-
-/**
  * cleanUpXmlField
  *
  * Clean up a XML field
@@ -177,35 +158,5 @@ void cleanUpXmlField(char **field) {
     if (*field != NULL) {
         xmlFree(*field);
         *field = NULL;
-    }
-}
-
-
-/**
- * cleanDagNode
- *
- * Recursively clean the RBD DAG node
- *
- * Description:
- *  This recursive function cleans up all the children of the
- *  provided RBD DAG node, finally it cleans the node by freeing
- *  the allocated memory
- *
- * Parameters:
- *      node: pointer to the RBD DAG node
- */
-static void cleanDagNode(struct node *const node) {
-    unsigned char idx;
-
-    /* Clean-up the current RBD DAG node */
-    if (node->children != NULL) {
-        /* Clean-up all children */
-        for (idx = 0; idx < node->numChildren; ++idx) {
-            if (node->children[idx] != NULL) {
-                cleanDagNode(node->children[idx]);
-            }
-        }
-        free(node->children);
-        node->children = NULL;
     }
 }

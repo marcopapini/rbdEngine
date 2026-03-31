@@ -24,8 +24,11 @@
 
 
 #include "evaluate.h"
+
+#include "dagdata.h"
 #include "rbd.h"
 #include "rbddata.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -478,11 +481,13 @@ static int computeBlockReliability(struct rbd *rbd, struct block *block) {
     unsigned int tIdx;
     unsigned char cIdx;
 
-    /* Allocate memory for output reliability array */
-    block->reliability = (double *)malloc(sizeof(double) * rbd->time.numTimes);
     if (block->reliability == NULL) {
-        fprintf(stderr, "Unable to allocate memory for Reliability curve of block %s\n", block->outputName);
-        return -1;
+        /* Allocate memory for output reliability array */
+        block->reliability = (double *)malloc(sizeof(double) * rbd->time.numTimes);
+        if (block->reliability == NULL) {
+            fprintf(stderr, "Unable to allocate memory for Reliability curve of block %s\n", block->outputName);
+            return -1;
+        }
     }
 
     /* Is the block a generic RBD block? */

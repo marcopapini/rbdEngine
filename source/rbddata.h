@@ -1,5 +1,5 @@
 /*
- *  Component: rbd_data.h
+ *  Component: rbddata.h
  *  Management of Data Structures equivalent to RBD Description Language
  *
  *  rbdEngine - Evaluate the reliability of a given Reliability Block Diagram
@@ -27,30 +27,24 @@
 #include <stdio.h>
 
 
-#define ANCESTOR_INFO_PER_BYTE  0x4     /* Number of ancestor information per byte */
-
-#define ANCESTOR_MASK           0x3     /* Bitmask to extract ancestor information */
-#define ANCESTOR_BYTE_RSHIFT    0x2     /* Right shift to extract byte from row */
-#define ANCESTOR_BYTE_LSHIFT    0x1     /* Left shift to extract ancestor from byte */
-#define ANCESTOR_BYTE_MASK      0x3     /* Bitmask to extract ancestor from byte */
-
-#define ANCESTOR_UNKNOWN        0x0     /* Ancestor information not available */
-#define ANCESTOR_NO             0x2     /* Node is not an ancestor */
-#define ANCESTOR_YES            0x3     /* Node is an ancestor */
-#define IS_ANCESTOR_MASK        0x1     /* Bitmask to extract if node is effectively an ancestor */
-
-
 /**
  * Enumeration of possible distribution types
  */
 enum DST {
-    DST_CUSTOM = 0,         /* Custom distribution, retrieved from file */
-    DST_EXPONENTIAL,        /* Exponential distribution */
-    DST_LOGNORMAL,          /* Log-normal distribution */
-    DST_NORMAL,             /* Normal distribution */
-    DST_WEIBULL,            /* Weibull distribution */
-    DST_GAMMA,              /* Gamma distribution */
-    DST_BIRNBAUM_SAUNDERS   /* Birnbaum-Saunders distribution */
+    DST_CUSTOM = 0,         /* Custom Reliability distribution, retrieved from file */
+    DST_EXPONENTIAL,        /* Exponential Reliability distribution */
+    DST_LOGNORMAL,          /* Log-normal Reliability distribution */
+    DST_NORMAL,             /* Normal Reliability distribution */
+    DST_WEIBULL,            /* Weibull Reliability distribution */
+    DST_GAMMA,              /* Gamma Reliability distribution */
+    DST_BIRNBAUM_SAUNDERS,  /* Birnbaum-Saunders Reliability distribution */
+    DST_GOEL_OKUMOTO,       /* Goel-Okumoto NHPP distribution */
+    DST_YAMADA_S_SHAPED,    /* Yamada S-Shaped NHPP distribution */
+    DST_MUSA_OKUMOTO,       /* Musa-Okumoto NHPP distribution */
+    DST_OHBA_S_SHAPED,      /* Ohba S-Shaped NHPP distribution */
+    DST_GOEL_GENERALIZED,   /* Goel Generalized NHPP distribution */
+    DST_KAPUR_GARG_3S,      /* Kapur-Garg 3-Stage NHPP distribution */
+    DST_PHAM_ZHANG          /* Pham-Zhang NHPP distribution */
 };
 
 /**
@@ -69,18 +63,6 @@ enum BLK {
 enum INPUT {
     INPUT_COMPONENT = 0,    /* Input is a RBD Component */
     INPUT_BLOCK             /* Input is a RBD Block */
-};
-
-/**
- * Enumeration of possible states during traversal visiting of DAG
- */
-enum DAG {
-    DAG_UNVISITED = 0,      /* DAG node is unvisited */
-    DAG_VISITING,           /* DAG node is currently under visit */
-    DAG_VISITED,            /* DAG node is visited */
-    DAG_COMPUTED,           /* DAG node has been fully computed */
-    DAG_COMPUTED_PIVOT,     /* DAG node has been computed, but it is a pivot node for CDM */
-    DAG_DEFERRED_CDM        /* DAG node can be evaluated only through CDM */
 };
 
 /**
@@ -145,11 +127,99 @@ struct gamma {
 };
 
 /**
- * Data structure representing the RBD Description Language <rbd/components/component/birnbaum_saunders> element
+ * Data structure representing the RBD Description Language <rbd/components/component/birnbaum-saunders> element
  */
-struct birnbaum_saunder {
+struct birnbaum_saunders {
     double alpha;
     double beta;
+    char *outputFilename;
+};
+
+/**
+ * Data structure representing the RBD Description Language <rbd/components/component/goel-okumoto> element
+ */
+struct goel_okumoto {
+    double a;
+    double b;
+    double test;
+    double offset;
+    double eta;
+    char *outputFilename;
+};
+
+/**
+ * Data structure representing the RBD Description Language <rbd/components/component/yamada_s-shaped> element
+ */
+struct yamada_s_shaped {
+    double a;
+    double b;
+    double test;
+    double offset;
+    double eta;
+    char *outputFilename;
+};
+
+/**
+ * Data structure representing the RBD Description Language <rbd/components/component/musa-okumoto> element
+ */
+struct musa_okumoto {
+    double lambda;
+    double theta;
+    double test;
+    double offset;
+    double eta;
+    char *outputFilename;
+};
+
+/**
+ * Data structure representing the RBD Description Language <rbd/components/component/ohba_s-shaped> element
+ */
+struct ohba_s_shaped {
+    double a;
+    double b;
+    double phi;
+    double test;
+    double offset;
+    double eta;
+    char *outputFilename;
+};
+
+/**
+ * Data structure representing the RBD Description Language <rbd/components/component/goel_generalized> element
+ */
+struct goel_generalized {
+    double a;
+    double b;
+    double c;
+    double test;
+    double offset;
+    double eta;
+    char *outputFilename;
+};
+
+/**
+ * Data structure representing the RBD Description Language <rbd/components/component/kapur-garg_3> element
+ */
+struct kapur_garg_3 {
+    double a;
+    double b;
+    double test;
+    double offset;
+    double eta;
+    char *outputFilename;
+};
+
+/**
+ * Data structure representing the RBD Description Language <rbd/components/component/pham-zhang> element
+ */
+struct pham_zhang {
+    double a;
+    double b;
+    double alpha;
+    double beta;
+    double test;
+    double offset;
+    double eta;
     char *outputFilename;
 };
 
@@ -160,13 +230,20 @@ struct component {
     char *name;
     enum DST type;
     union params {
-        struct custom c;
-        struct exponential e;
-        struct lognormal l;
-        struct normal n;
-        struct weibull w;
-        struct gamma g;
-        struct birnbaum_saunder bs;
+        struct custom rel_c;
+        struct exponential rel_e;
+        struct lognormal rel_l;
+        struct normal rel_n;
+        struct weibull rel_w;
+        struct gamma rel_g;
+        struct birnbaum_saunders rel_bs;
+        struct goel_okumoto nhpp_go;
+        struct yamada_s_shaped nhpp_yss;
+        struct musa_okumoto nhpp_mo;
+        struct ohba_s_shaped nhpp_oss;
+        struct goel_generalized nhpp_gg;
+        struct kapur_garg_3 nhpp_kg3;
+        struct pham_zhang nhpp_pz;
     } params;
     double *reliability;
     unsigned char bIsForced;
@@ -213,131 +290,6 @@ struct rbd {
     struct block *blocks;
 };
 
-/**
- * Data structure representing a Node of the RBD Directed Acyclic Graph (DAG)
- */
-struct node {
-    unsigned int nodeId;
-    enum INPUT input;
-    struct block *block;
-    struct component *component;
-    unsigned int refCount;
-    struct node **children;
-    unsigned char numChildren;
-    enum DAG status;
-};
-
-/**
- * Data structure representing the RBD Directed Acyclic Graph (DAG)
- */
-struct dag {
-    struct node *root;
-    unsigned int numNodes;
-    unsigned int expectedNodes;
-    unsigned char *ancestorMatrix;
-    struct node **pivots;
-    unsigned int numPivots;
-    unsigned int *pivotsIdx;
-    unsigned int numPivotIdx;
-};
-
-
-/**
- * floorDivision
- *
- * Compute floor value of division
- *
- * Description:
- *  Computes the floor value of the requested division
- *
- * Parameters:
- *      dividend: dividend of division
- *      divisor: divisor of division
- *
- * Return (int):
- *  Floor value of division
- */
-static inline int floorDivision(int dividend, int divisor) {
-    return (dividend / divisor);
-}
-
-/**
- * ceilDivision
- *
- * Compute ceil value of division
- *
- * Description:
- *  Computes the ceil value of the requested division
- *
- * Parameters:
- *      dividend: dividend of division
- *      divisor: divisor of division
- *
- * Return (int):
- *  Ceil value of division
- */
-static inline int ceilDivision(int dividend, int divisor) {
-    return floorDivision(dividend + divisor - 1, divisor);
-}
-
-/**
- * getAncestor
- *
- * Get the ancestor information
- *
- * Description:
- *  This function gets the ancestor information of the provided two node identifiers
- *
- * Parameters:
- *      dag: RBD DAG used for the get operation
- *      firstId: identifier of the first node (possible ancestor)
- *      secondId: identifier of the second node (possible descendant)
- *
- * Return (unsigned char):
- *  Ancestor information as follows: ANCESTOR_UNKOWN if no information is available,
- *  ANCESTOR_NO if the first node is not an ancestor of second one, ANCESTOR_YES otherwise
- */
-static inline unsigned char getAncestor(struct dag *dag, unsigned int firstId, unsigned int secondId) {
-    unsigned char byte;
-
-    /* Retrieve the byte containing the ancestor information */
-    byte = dag->ancestorMatrix[(firstId * ceilDivision(dag->expectedNodes, ANCESTOR_INFO_PER_BYTE)) +
-                                  (secondId >> ANCESTOR_BYTE_RSHIFT)];
-    /* Extract the ancestor information from the byte */
-    return (byte >> ((secondId & ANCESTOR_BYTE_MASK) << ANCESTOR_BYTE_LSHIFT)) & ANCESTOR_MASK;
-}
-
-/**
- * setAncestor
- *
- * Set the ancestor information
- *
- * Description:
- *  This function sets the ancestor information of the provided two node identifiers
- *
- * Parameters:
- *      dag: RBD DAG used for the set operation
- *      firstId: identifier of the first node (possible ancestor)
- *      secondId: identifier of the second node (possible descendant)
- *      info: ancestor information to be set
- */
-static inline void setAncestor(struct dag *dag, unsigned int firstId, unsigned int secondId, unsigned char info) {
-    unsigned int bitPos;
-    unsigned int byteIdx;
-    unsigned char currentByte;
-
-    /* Compute the byte index of the element to update */
-    byteIdx = (firstId * ceilDivision(dag->expectedNodes, ANCESTOR_INFO_PER_BYTE)) + (secondId >> ANCESTOR_BYTE_RSHIFT);
-    /* Compute the bitmask position of the element to update */
-    bitPos = (secondId & ANCESTOR_BYTE_MASK) << ANCESTOR_BYTE_LSHIFT;
-
-    /* Retrieve the element to update */
-    currentByte = dag->ancestorMatrix[byteIdx];
-
-    /* Update the information of the ancestor */
-    dag->ancestorMatrix[byteIdx] = currentByte ^ ((currentByte ^ (info << bitPos)) & (ANCESTOR_MASK << bitPos));
-}
-
 
 /**
  * cleanUpRbd
@@ -352,20 +304,6 @@ static inline void setAncestor(struct dag *dag, unsigned int firstId, unsigned i
  *      rbd: pointer to the RBD Data Structure
  */
 void cleanUpRbd(struct rbd *const rbd);
-
-/**
- * cleanUpDag
- *
- * Clean up the RBD DAG
- *
- * Description:
- *  This function cleans up the provided RBD DAG by freeing
- *  the allocated memory
- *
- * Parameters:
- *      dag: pointer to the RBD DAG
- */
-void cleanUpDag(struct dag *dag);
 
 /**
  * cleanUpXmlField

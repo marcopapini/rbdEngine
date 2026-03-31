@@ -1,6 +1,6 @@
 /*
- *  Component: rbd2dag.h
- *  Convert the provided RBD Data Structure into a RBD Directed Acyclic Graph (DAG)
+ *  Component: common.h
+ *  Common functionalities of rbdEngine
  *
  *  rbdEngine - Evaluate the reliability of a given Reliability Block Diagram
  *  through the RBD Description Language file.
@@ -20,32 +20,47 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef RBD2DAG_H
-#define RBD2DAG_H
-
-
-#include "dagdata.h"
-#include "rbddata.h"
+#ifndef COMMON_H
+#define COMMON_H
 
 
 /**
- * rbd2dag
+ * floorDivision
  *
- * Convert the RBD Data Structure into the RBD DAG
+ * Compute floor value of division
  *
  * Description:
- *  This function converts the provided RBD Data Structure into the RBD DAG.
- *  Furthermore, this function checks that the created RBD DAG is valid,
- *  i.e., it contains the expected number of nodes and it is actually acyclic.
+ *  Computes the floor value of the requested division
  *
  * Parameters:
- *      rbd: RBD Data Structure used to create the RBD DAG
- *      root: set with the root of the RBD DAG
+ *      dividend: dividend of division
+ *      divisor: divisor of division
  *
  * Return (int):
- *  0 if the RBD DAG has been created successfully, < 0 otherwise
+ *  Floor value of division
  */
-int rbd2dag(const struct rbd *const rbd, struct dag *dag);
+static inline int floorDivision(int dividend, int divisor) {
+    return (dividend / divisor);
+}
+
+/**
+ * ceilDivision
+ *
+ * Compute ceil value of division
+ *
+ * Description:
+ *  Computes the ceil value of the requested division
+ *
+ * Parameters:
+ *      dividend: dividend of division
+ *      divisor: divisor of division
+ *
+ * Return (int):
+ *  Ceil value of division
+ */
+static inline int ceilDivision(int dividend, int divisor) {
+    return floorDivision(dividend + divisor - 1, divisor);
+}
 
 
-#endif /* RBD2DAG_H */
+#endif /* COMMON_H */

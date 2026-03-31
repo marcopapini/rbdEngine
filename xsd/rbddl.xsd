@@ -21,6 +21,28 @@
     </xs:restriction>
   </xs:simpleType>
 
+  <xs:simpleType name="nonNegativeDouble">
+    <xs:restriction base="xs:double">
+      <xs:minInclusive value="0.0"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="positiveDouble">
+    <xs:restriction base="xs:double">
+      <xs:minExclusive value="0.0"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="zeroIncOneExcDouble">
+    <xs:restriction base="xs:double">
+      <xs:minInclusive value="0.0"/>
+      <xs:maxExclusive value="1.0"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="oneOrMore">
+    <xs:restriction base="xs:double">
+      <xs:minInclusive value="1.0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
   <xs:complexType name="timeElem">
     <xs:attribute name="start" type="startTime" use="required" />
     <xs:attribute name="end" type="endTime" use="required" />
@@ -31,32 +53,92 @@
     <xs:attribute name="filename" type="xs:string" use="required" />
   </xs:complexType>
   <xs:complexType name="exponentialElem">
-    <xs:attribute name="lambda" type="xs:double" use="required" />
+    <xs:attribute name="lambda" type="positiveDouble" use="required" />
     <xs:attribute name="outputFilename" type="xs:string" use="optional" />
   </xs:complexType>
   <xs:complexType name="lognormalElem">
     <xs:attribute name="mu" type="xs:double" use="required" />
-    <xs:attribute name="sigma" type="xs:double" use="required" />
+    <xs:attribute name="sigma" type="positiveDouble" use="required" />
     <xs:attribute name="outputFilename" type="xs:string" use="optional" />
   </xs:complexType>
   <xs:complexType name="normalElem">
     <xs:attribute name="mu" type="xs:double" use="required" />
-    <xs:attribute name="sigma" type="xs:double" use="required" />
+    <xs:attribute name="sigma" type="positiveDouble" use="required" />
     <xs:attribute name="outputFilename" type="xs:string" use="optional" />
   </xs:complexType>
   <xs:complexType name="weibullElem">
-    <xs:attribute name="lambda" type="xs:double" use="required" />
-    <xs:attribute name="k" type="xs:double" use="required" />
+    <xs:attribute name="lambda" type="positiveDouble" use="required" />
+    <xs:attribute name="k" type="positiveDouble" use="required" />
     <xs:attribute name="outputFilename" type="xs:string" use="optional" />
   </xs:complexType>
   <xs:complexType name="gammaElem">
-    <xs:attribute name="alpha" type="xs:double" use="required" />
-    <xs:attribute name="theta" type="xs:double" use="required" />
+    <xs:attribute name="alpha" type="positiveDouble" use="required" />
+    <xs:attribute name="theta" type="positiveDouble" use="required" />
     <xs:attribute name="outputFilename" type="xs:string" use="optional" />
   </xs:complexType>
   <xs:complexType name="birnbaumSaundersElem">
-    <xs:attribute name="alpha" type="xs:double" use="required" />
-    <xs:attribute name="beta" type="xs:double" use="required" />
+    <xs:attribute name="alpha" type="positiveDouble" use="required" />
+    <xs:attribute name="beta" type="positiveDouble" use="required" />
+    <xs:attribute name="outputFilename" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="goelOkumotoElem">
+    <xs:attribute name="a" type="positiveDouble" use="required" />
+    <xs:attribute name="b" type="positiveDouble" use="required" />
+    <xs:attribute name="test" type="nonNegativeDouble" use="optional" />
+    <xs:attribute name="offset" type="nonNegativeDouble" use="optional" />
+    <xs:attribute name="eta" type="oneOrMore" use="optional" />
+    <xs:attribute name="outputFilename" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="yamadaSShapedElem">
+    <xs:attribute name="a" type="positiveDouble" use="required" />
+    <xs:attribute name="b" type="positiveDouble" use="required" />
+    <xs:attribute name="test" type="nonNegativeDouble" use="optional" />
+    <xs:attribute name="offset" type="nonNegativeDouble" use="optional" />
+    <xs:attribute name="eta" type="oneOrMore" use="optional" />
+    <xs:attribute name="outputFilename" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="musaOkumotoElem">
+    <xs:attribute name="lambda" type="positiveDouble" use="required" />
+    <xs:attribute name="theta" type="positiveDouble" use="required" />
+    <xs:attribute name="test" type="nonNegativeDouble" use="optional" />
+    <xs:attribute name="offset" type="nonNegativeDouble" use="optional" />
+    <xs:attribute name="eta" type="oneOrMore" use="optional" />
+    <xs:attribute name="outputFilename" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="ohbaSShapedElem">
+    <xs:attribute name="a" type="positiveDouble" use="required" />
+    <xs:attribute name="b" type="positiveDouble" use="required" />
+    <xs:attribute name="phi" type="nonNegativeDouble" use="required" />
+    <xs:attribute name="test" type="nonNegativeDouble" use="optional" />
+    <xs:attribute name="offset" type="nonNegativeDouble" use="optional" />
+    <xs:attribute name="eta" type="oneOrMore" use="optional" />
+    <xs:attribute name="outputFilename" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="goelGeneralizedElem">
+    <xs:attribute name="a" type="positiveDouble" use="required" />
+    <xs:attribute name="b" type="positiveDouble" use="required" />
+    <xs:attribute name="c" type="positiveDouble" use="required" />
+    <xs:attribute name="test" type="nonNegativeDouble" use="optional" />
+    <xs:attribute name="offset" type="nonNegativeDouble" use="optional" />
+    <xs:attribute name="eta" type="oneOrMore" use="optional" />
+    <xs:attribute name="outputFilename" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="kapurGarg3StageElem">
+    <xs:attribute name="a" type="positiveDouble" use="required" />
+    <xs:attribute name="b" type="positiveDouble" use="required" />
+    <xs:attribute name="test" type="nonNegativeDouble" use="optional" />
+    <xs:attribute name="offset" type="nonNegativeDouble" use="optional" />
+    <xs:attribute name="eta" type="oneOrMore" use="optional" />
+    <xs:attribute name="outputFilename" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="phamZhangElem">
+    <xs:attribute name="a" type="positiveDouble" use="required" />
+    <xs:attribute name="b" type="positiveDouble" use="required" />
+    <xs:attribute name="alpha" type="nonNegativeDouble" use="required" />
+    <xs:attribute name="beta" type="zeroIncOneExcDouble" use="required" />
+    <xs:attribute name="test" type="nonNegativeDouble" use="optional" />
+    <xs:attribute name="offset" type="nonNegativeDouble" use="optional" />
+    <xs:attribute name="eta" type="oneOrMore" use="optional" />
     <xs:attribute name="outputFilename" type="xs:string" use="optional" />
   </xs:complexType>
 
@@ -155,7 +237,14 @@
                     <xs:element name="normal" type="normalElem" />
                     <xs:element name="weibull" type="weibullElem" />
                     <xs:element name="gamma" type="gammaElem" />
-                    <xs:element name="birnbaum_saunders" type="birnbaumSaundersElem" />
+                    <xs:element name="birnbaum-saunders" type="birnbaumSaundersElem" />
+                    <xs:element name="goel-okumoto" type="goelOkumotoElem" />
+                    <xs:element name="yamada_s-shaped" type="yamadaSShapedElem" />
+                    <xs:element name="musa-okumoto" type="musaOkumotoElem" />
+                    <xs:element name="ohba_s-shaped" type="ohbaSShapedElem" />
+                    <xs:element name="goel_generalized" type="goelGeneralizedElem" />
+                    <xs:element name="kapur-garg_3-stage" type="kapurGarg3StageElem" />
+                    <xs:element name="pham-zhang" type="phamZhangElem" />
                   </xs:choice>
                   <xs:attribute name="name" type="xs:string" use="required" />
                 </xs:complexType>

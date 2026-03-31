@@ -67,10 +67,10 @@ double gamma_p(double a, double x) {
     double res;
 
     /* Domain validation */
-    if (a <= 0.0 || x < 0.0) {
+    if (a <= 0.0) {
         return -1.0;
     }
-    if (x == 0.0) {
+    if (x <= 0.0) {
         return 0.0;
     }
     if (x >= DBL_MAX || a >= DBL_MAX) {

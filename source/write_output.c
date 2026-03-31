@@ -62,54 +62,117 @@ int writeOutputFiles(struct rbd *rbd) {
     for (idx = 0; idx < rbd->numComponents; ++idx) {
         switch (rbd->components[idx].type) {
             case DST_EXPONENTIAL:
-                if (rbd->components[idx].params.e.outputFilename != NULL) {
+                if (rbd->components[idx].params.rel_e.outputFilename != NULL) {
                     if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
-                                rbd->components[idx].params.e.outputFilename) < 0) {
+                                rbd->components[idx].params.rel_e.outputFilename) < 0) {
                         return -1;
                     }
                 }
                 break;
 
             case DST_LOGNORMAL:
-                if (rbd->components[idx].params.l.outputFilename != NULL) {
+                if (rbd->components[idx].params.rel_l.outputFilename != NULL) {
                     if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
-                                rbd->components[idx].params.l.outputFilename) < 0) {
+                                rbd->components[idx].params.rel_l.outputFilename) < 0) {
                         return -1;
                     }
                 }
                 break;
 
             case DST_NORMAL:
-                if (rbd->components[idx].params.n.outputFilename != NULL) {
+                if (rbd->components[idx].params.rel_n.outputFilename != NULL) {
                     if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
-                                rbd->components[idx].params.n.outputFilename) < 0) {
+                                rbd->components[idx].params.rel_n.outputFilename) < 0) {
                         return -1;
                     }
                 }
                 break;
 
             case DST_WEIBULL:
-                if (rbd->components[idx].params.w.outputFilename != NULL) {
+                if (rbd->components[idx].params.rel_w.outputFilename != NULL) {
                     if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
-                                rbd->components[idx].params.w.outputFilename) < 0) {
+                                rbd->components[idx].params.rel_w.outputFilename) < 0) {
                         return -1;
                     }
                 }
                 break;
 
             case DST_GAMMA:
-                if (rbd->components[idx].params.g.outputFilename != NULL) {
+                if (rbd->components[idx].params.rel_g.outputFilename != NULL) {
                     if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
-                                rbd->components[idx].params.g.outputFilename) < 0) {
+                                rbd->components[idx].params.rel_g.outputFilename) < 0) {
                         return -1;
                     }
                 }
                 break;
 
             case DST_BIRNBAUM_SAUNDERS:
-                if (rbd->components[idx].params.bs.outputFilename != NULL) {
+                if (rbd->components[idx].params.rel_bs.outputFilename != NULL) {
                     if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
-                                rbd->components[idx].params.bs.outputFilename) < 0) {
+                                rbd->components[idx].params.rel_bs.outputFilename) < 0) {
+                        return -1;
+                    }
+                }
+                break;
+
+            case DST_GOEL_OKUMOTO:
+                if (rbd->components[idx].params.nhpp_go.outputFilename != NULL) {
+                    if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
+                                rbd->components[idx].params.nhpp_go.outputFilename) < 0) {
+                        return -1;
+                    }
+                }
+                break;
+
+            case DST_YAMADA_S_SHAPED:
+                if (rbd->components[idx].params.nhpp_yss.outputFilename != NULL) {
+                    if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
+                                rbd->components[idx].params.nhpp_yss.outputFilename) < 0) {
+                        return -1;
+                    }
+                }
+                break;
+
+            case DST_MUSA_OKUMOTO:
+                if (rbd->components[idx].params.nhpp_mo.outputFilename != NULL) {
+                    if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
+                                rbd->components[idx].params.nhpp_mo.outputFilename) < 0) {
+                        return -1;
+                    }
+                }
+                break;
+
+            case DST_OHBA_S_SHAPED:
+                if (rbd->components[idx].params.nhpp_oss.outputFilename != NULL) {
+                    if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
+                                rbd->components[idx].params.nhpp_oss.outputFilename) < 0) {
+                        return -1;
+                    }
+                }
+                break;
+
+            case DST_GOEL_GENERALIZED:
+                if (rbd->components[idx].params.nhpp_gg.outputFilename != NULL) {
+                    if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
+                                rbd->components[idx].params.nhpp_gg.outputFilename) < 0) {
+                        return -1;
+                    }
+                }
+                break;
+
+            case DST_KAPUR_GARG_3S:
+                if (rbd->components[idx].params.nhpp_kg3.outputFilename != NULL) {
+                    if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
+                                rbd->components[idx].params.nhpp_kg3.outputFilename) < 0) {
+                        return -1;
+                    }
+                }
+                break;
+
+            case DST_PHAM_ZHANG:
+                if (rbd->components[idx].params.nhpp_pz.outputFilename != NULL) {
+                    if (writeComponentReliabilityCurve(&rbd->time, &rbd->components[idx],
+                                rbd->components[idx].params.nhpp_pz.outputFilename) < 0) {
                         return -1;
                     }
                 }

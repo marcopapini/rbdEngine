@@ -25,6 +25,7 @@
 #define EVALUATE_H
 
 
+#include "dagdata.h"
 #include "rbddata.h"
 
 

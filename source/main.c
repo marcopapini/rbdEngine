@@ -21,6 +21,7 @@
  */
 
 
+#include "dagdata.h"
 #include "evaluate.h"
 #include "rbd2dag.h"
 #include "rbddata.h"

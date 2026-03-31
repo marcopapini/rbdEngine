@@ -24,6 +24,7 @@
 #include "xml2rbd.h"
 
 #include "rbddata.h"
+#include "nhpp_mission_reliability.h"
 #include "reliability.h"
 
 #include <math.h>
@@ -245,82 +246,357 @@ static int processComponentElement(const xmlNode *const componentNode, struct co
             if (xmlStrEqual(node->name, BAD_CAST "custom")) {
                 /* Process the <custom> element */
                 component->type = DST_CUSTOM;
-                component->params.c.filename = (char *)xmlGetProp(node, BAD_CAST "filename");
-                IS_VALID_ATTR("rbd/components/component/custom@filename", component->params.c.filename);
+                component->params.rel_c.filename = (char *)xmlGetProp(node, BAD_CAST "filename");
+                IS_VALID_ATTR("rbd/components/component/custom@filename", component->params.rel_c.filename);
             }
             else if (xmlStrEqual(node->name, BAD_CAST "exponential")) {
                 /* Process the <exponential> element */
                 component->type = DST_EXPONENTIAL;
                 attr = xmlGetProp(node, BAD_CAST "lambda");
                 IS_VALID_ATTR("rbd/components/component/exponential@lambda", attr);
-                component->params.e.lambda = strtod((char *)attr, &endPtr);
+                component->params.rel_e.lambda = strtod((char *)attr, &endPtr);
                 xmlFree(attr);
-                component->params.e.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+                component->params.rel_e.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
             }
             else if (xmlStrEqual(node->name, BAD_CAST "lognormal")) {
                 /* Process the <lognormal> element */
                 component->type = DST_LOGNORMAL;
                 attr = xmlGetProp(node, BAD_CAST "mu");
                 IS_VALID_ATTR("rbd/components/component/lognormal@mu", attr);
-                component->params.l.mu = strtod((char *)attr, &endPtr);
+                component->params.rel_l.mu = strtod((char *)attr, &endPtr);
                 xmlFree(attr);
                 attr = xmlGetProp(node, BAD_CAST "sigma");
                 IS_VALID_ATTR("rbd/components/component/lognormal@sigma", attr);
-                component->params.l.sigma = strtod((char *)attr, &endPtr);
+                component->params.rel_l.sigma = strtod((char *)attr, &endPtr);
                 xmlFree(attr);
-                component->params.l.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+                component->params.rel_l.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
             }
             else if (xmlStrEqual(node->name, BAD_CAST "normal")) {
                 /* Process the <normal> element */
                 component->type = DST_NORMAL;
                 attr = xmlGetProp(node, BAD_CAST "mu");
                 IS_VALID_ATTR("rbd/components/component/normal@mu", attr);
-                component->params.n.mu = strtod((char *)attr, &endPtr);
+                component->params.rel_n.mu = strtod((char *)attr, &endPtr);
                 xmlFree(attr);
                 attr = xmlGetProp(node, BAD_CAST "sigma");
                 IS_VALID_ATTR("rbd/components/component/normal@sigma", attr);
-                component->params.n.sigma = strtod((char *)attr, &endPtr);
+                component->params.rel_n.sigma = strtod((char *)attr, &endPtr);
                 xmlFree(attr);
-                component->params.n.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+                component->params.rel_n.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
             }
             else if (xmlStrEqual(node->name, BAD_CAST "weibull")) {
                 /* Process the <weibull> element */
                 component->type = DST_WEIBULL;
                 attr = xmlGetProp(node, BAD_CAST "lambda");
                 IS_VALID_ATTR("rbd/components/component/weibull@lambda", attr);
-                component->params.w.lambda = strtod((char *)attr, &endPtr);
+                component->params.rel_w.lambda = strtod((char *)attr, &endPtr);
                 xmlFree(attr);
                 attr = xmlGetProp(node, BAD_CAST "k");
                 IS_VALID_ATTR("rbd/components/component/weibull@k", attr);
-                component->params.w.k = strtod((char *)attr, &endPtr);
+                component->params.rel_w.k = strtod((char *)attr, &endPtr);
                 xmlFree(attr);
-                component->params.w.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+                component->params.rel_w.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
             }
             else if (xmlStrEqual(node->name, BAD_CAST "gamma")) {
                 /* Process the <gamma> element */
                 component->type = DST_GAMMA;
                 attr = xmlGetProp(node, BAD_CAST "alpha");
                 IS_VALID_ATTR("rbd/components/component/gamma@alpha", attr);
-                component->params.g.alpha = strtod((char *)attr, &endPtr);
+                component->params.rel_g.alpha = strtod((char *)attr, &endPtr);
                 xmlFree(attr);
                 attr = xmlGetProp(node, BAD_CAST "theta");
                 IS_VALID_ATTR("rbd/components/component/gamma@theta", attr);
-                component->params.g.theta = strtod((char *)attr, &endPtr);
+                component->params.rel_g.theta = strtod((char *)attr, &endPtr);
                 xmlFree(attr);
-                component->params.g.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+                component->params.rel_g.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
             }
-            else {
-                /* Process the <birnbaum_saunders> element */
+            else if (xmlStrEqual(node->name, BAD_CAST "birnbaum-saunders")) {
+                /* Process the <birnbaum-saunders> element */
                 component->type = DST_BIRNBAUM_SAUNDERS;
                 attr = xmlGetProp(node, BAD_CAST "alpha");
-                IS_VALID_ATTR("rbd/components/component/gamma@alpha", attr);
-                component->params.bs.alpha = strtod((char *)attr, &endPtr);
+                IS_VALID_ATTR("rbd/components/component/birnbaum-saunders@alpha", attr);
+                component->params.rel_bs.alpha = strtod((char *)attr, &endPtr);
                 xmlFree(attr);
                 attr = xmlGetProp(node, BAD_CAST "beta");
-                IS_VALID_ATTR("rbd/components/component/gamma@beta", attr);
-                component->params.bs.beta = strtod((char *)attr, &endPtr);
+                IS_VALID_ATTR("rbd/components/component/birnbaum-saunders@beta", attr);
+                component->params.rel_bs.beta = strtod((char *)attr, &endPtr);
                 xmlFree(attr);
-                component->params.bs.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+                component->params.rel_bs.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+            }
+            else if (xmlStrEqual(node->name, BAD_CAST "goel-okumoto")) {
+                /* Process the <goel-okumoto> element */
+                component->type = DST_GOEL_OKUMOTO;
+                attr = xmlGetProp(node, BAD_CAST "a");
+                IS_VALID_ATTR("rbd/components/component/goel-okumoto@a", attr);
+                component->params.nhpp_go.a = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "b");
+                IS_VALID_ATTR("rbd/components/component/goel-okumoto@b", attr);
+                component->params.nhpp_go.b = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "test");
+                if (attr != NULL) {
+                    component->params.nhpp_go.test = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_go.test = 0.0;
+                }
+                attr = xmlGetProp(node, BAD_CAST "offset");
+                if (attr != NULL) {
+                    component->params.nhpp_go.offset = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_go.offset = 0.0;
+                }
+                attr = xmlGetProp(node, BAD_CAST "eta");
+                if (attr != NULL) {
+                    component->params.nhpp_go.eta = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_go.eta = 1.0;
+                }
+                component->params.nhpp_go.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+            }
+            else if (xmlStrEqual(node->name, BAD_CAST "yamada_s-shaped")) {
+                /* Process the <yamada_s-shaped> element */
+                component->type = DST_YAMADA_S_SHAPED;
+                attr = xmlGetProp(node, BAD_CAST "a");
+                IS_VALID_ATTR("rbd/components/component/yamada_s-shaped@a", attr);
+                component->params.nhpp_yss.a = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "b");
+                IS_VALID_ATTR("rbd/components/component/yamada_s-shaped@b", attr);
+                component->params.nhpp_yss.b = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "test");
+                if (attr != NULL) {
+                    component->params.nhpp_yss.test = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_yss.test = 0.0;
+                }
+                attr = xmlGetProp(node, BAD_CAST "offset");
+                if (attr != NULL) {
+                    component->params.nhpp_yss.offset = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_yss.offset = 0.0;
+                }
+                attr = xmlGetProp(node, BAD_CAST "eta");
+                if (attr != NULL) {
+                    component->params.nhpp_yss.eta = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_yss.eta = 1.0;
+                }
+                component->params.nhpp_yss.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+            }
+            else if (xmlStrEqual(node->name, BAD_CAST "musa-okumoto")) {
+                /* Process the <musa-okumoto> element */
+                component->type = DST_MUSA_OKUMOTO;
+                attr = xmlGetProp(node, BAD_CAST "lambda");
+                IS_VALID_ATTR("rbd/components/component/musa-okumoto@lambda", attr);
+                component->params.nhpp_mo.lambda = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "theta");
+                IS_VALID_ATTR("rbd/components/component/musa-okumoto@theta", attr);
+                component->params.nhpp_mo.theta = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "test");
+                if (attr != NULL) {
+                    component->params.nhpp_mo.test = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_mo.test = 0.0;
+                }
+                attr = xmlGetProp(node, BAD_CAST "offset");
+                if (attr != NULL) {
+                    component->params.nhpp_mo.offset = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_mo.offset = 0.0;
+                }
+                attr = xmlGetProp(node, BAD_CAST "eta");
+                if (attr != NULL) {
+                    component->params.nhpp_mo.eta = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_mo.eta = 1.0;
+                }
+                component->params.nhpp_mo.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+            }
+            else if (xmlStrEqual(node->name, BAD_CAST "ohba_s-shaped")) {
+                /* Process the <ohba_s-shaped> element */
+                component->type = DST_OHBA_S_SHAPED;
+                attr = xmlGetProp(node, BAD_CAST "a");
+                IS_VALID_ATTR("rbd/components/component/ohba_s-shaped@a", attr);
+                component->params.nhpp_oss.a = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "b");
+                IS_VALID_ATTR("rbd/components/component/ohba_s-shaped@b", attr);
+                component->params.nhpp_oss.b = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "phi");
+                IS_VALID_ATTR("rbd/components/component/ohba_s-shaped@phi", attr);
+                component->params.nhpp_oss.phi = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "test");
+                if (attr != NULL) {
+                    component->params.nhpp_oss.test = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_oss.test = 0.0;
+                }
+                attr = xmlGetProp(node, BAD_CAST "offset");
+                if (attr != NULL) {
+                    component->params.nhpp_oss.offset = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_oss.offset = 0.0;
+                }
+                attr = xmlGetProp(node, BAD_CAST "eta");
+                if (attr != NULL) {
+                    component->params.nhpp_oss.eta = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_oss.eta = 1.0;
+                }
+                component->params.nhpp_oss.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+            }
+            else if (xmlStrEqual(node->name, BAD_CAST "goel_generalized")) {
+                /* Process the <goel_generalized> element */
+                component->type = DST_GOEL_GENERALIZED;
+                attr = xmlGetProp(node, BAD_CAST "a");
+                IS_VALID_ATTR("rbd/components/component/goel_generalized@a", attr);
+                component->params.nhpp_gg.a = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "b");
+                IS_VALID_ATTR("rbd/components/component/goel_generalized@b", attr);
+                component->params.nhpp_gg.b = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "c");
+                IS_VALID_ATTR("rbd/components/component/goel_generalized@c", attr);
+                component->params.nhpp_gg.c = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "test");
+                if (attr != NULL) {
+                    component->params.nhpp_gg.test = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_gg.test = 0.0;
+                }
+                attr = xmlGetProp(node, BAD_CAST "offset");
+                if (attr != NULL) {
+                    component->params.nhpp_gg.offset = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_gg.offset = 0.0;
+                }
+                attr = xmlGetProp(node, BAD_CAST "eta");
+                if (attr != NULL) {
+                    component->params.nhpp_gg.eta = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_gg.eta = 1.0;
+                }
+                component->params.nhpp_gg.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+            }
+            else if (xmlStrEqual(node->name, BAD_CAST "kapur-garg_3-stage")) {
+                /* Process the <kapur-garg_3-stage> element */
+                component->type = DST_KAPUR_GARG_3S;
+                attr = xmlGetProp(node, BAD_CAST "a");
+                IS_VALID_ATTR("rbd/components/component/kapur-garg_3-stage@a", attr);
+                component->params.nhpp_kg3.a = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "b");
+                IS_VALID_ATTR("rbd/components/component/kapur-garg_3-stage@b", attr);
+                component->params.nhpp_kg3.b = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "test");
+                if (attr != NULL) {
+                    component->params.nhpp_kg3.test = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_kg3.test = 0.0;
+                }
+                attr = xmlGetProp(node, BAD_CAST "offset");
+                if (attr != NULL) {
+                    component->params.nhpp_kg3.offset = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_kg3.offset = 0.0;
+                }
+                attr = xmlGetProp(node, BAD_CAST "eta");
+                if (attr != NULL) {
+                    component->params.nhpp_kg3.eta = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_kg3.eta = 1.0;
+                }
+                component->params.nhpp_kg3.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
+            }
+            else {
+                /* Process the <pham-zhang> element */
+                component->type = DST_PHAM_ZHANG;
+                attr = xmlGetProp(node, BAD_CAST "a");
+                IS_VALID_ATTR("rbd/components/component/pham-zhang@a", attr);
+                component->params.nhpp_pz.a = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "b");
+                IS_VALID_ATTR("rbd/components/component/pham-zhang@b", attr);
+                component->params.nhpp_pz.b = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "alpha");
+                IS_VALID_ATTR("rbd/components/component/pham-zhang@alpha", attr);
+                component->params.nhpp_pz.alpha = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "beta");
+                IS_VALID_ATTR("rbd/components/component/pham-zhang@beta", attr);
+                component->params.nhpp_pz.beta = strtod((char *)attr, &endPtr);
+                xmlFree(attr);
+                attr = xmlGetProp(node, BAD_CAST "test");
+                if (attr != NULL) {
+                    component->params.nhpp_pz.test = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_pz.test = 0.0;
+                }
+                attr = xmlGetProp(node, BAD_CAST "offset");
+                if (attr != NULL) {
+                    component->params.nhpp_pz.offset = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_pz.offset = 0.0;
+                }
+                attr = xmlGetProp(node, BAD_CAST "eta");
+                if (attr != NULL) {
+                    component->params.nhpp_pz.eta = strtod((char *)attr, &endPtr);
+                    xmlFree(attr);
+                }
+                else {
+                    component->params.nhpp_pz.eta = 1.0;
+                }
+                component->params.nhpp_pz.outputFilename = (char *)xmlGetProp(node, BAD_CAST "outputFilename");
             }
             break;
         }
@@ -735,8 +1011,43 @@ static int computeComponentReliability(struct rbd * const rbd) {
                 }
                 break;
             case DST_BIRNBAUM_SAUNDERS:
-            default:
                 if (birnbaumSaundersReliability(&rbd->time, &rbd->components[ii]) < 0) {
+                    return -1;
+                }
+                break;
+            case DST_GOEL_OKUMOTO:
+                if (goelOkumotoMissionReliability(&rbd->time, &rbd->components[ii]) < 0) {
+                    return -1;
+                }
+                break;
+            case DST_YAMADA_S_SHAPED:
+                if (yamadaSShapedMissionReliability(&rbd->time, &rbd->components[ii]) < 0) {
+                    return -1;
+                }
+                break;
+            case DST_MUSA_OKUMOTO:
+                if (musaOkumotoMissionReliability(&rbd->time, &rbd->components[ii]) < 0) {
+                    return -1;
+                }
+                break;
+            case DST_OHBA_S_SHAPED:
+                if (ohbaSShapedMissionReliability(&rbd->time, &rbd->components[ii]) < 0) {
+                    return -1;
+                }
+                break;
+            case DST_GOEL_GENERALIZED:
+                if (goelGeneralizedMissionReliability(&rbd->time, &rbd->components[ii]) < 0) {
+                    return -1;
+                }
+                break;
+            case DST_KAPUR_GARG_3S:
+                if (kapurGarg3MissionReliability(&rbd->time, &rbd->components[ii]) < 0) {
+                    return -1;
+                }
+                break;
+            case DST_PHAM_ZHANG:
+            default:
+                if (phamZhangMissionReliability(&rbd->time, &rbd->components[ii]) < 0) {
                     return -1;
                 }
                 break;

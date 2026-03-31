@@ -23,6 +23,7 @@
 
 #include "rbd2dag.h"
 
+#include "dagdata.h"
 #include "rbddata.h"
 
 #include <stdlib.h>
